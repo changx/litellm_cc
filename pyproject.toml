@@ -1,14 +1,13 @@
 [project]
-name = "litellm-gateway"
+name = "direct-llm-gateway"
 version = "0.1.0"
-description = "LLM Gateway based on LiteLLM"
+description = "Direct LLM Gateway with native provider integration"
 authors = [
-    {name = "LiteLLM Gateway", email = "admin@example.com"}
+    {name = "Direct LLM Gateway", email = "admin@example.com"}
 ]
 dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
-    "litellm>=1.40.0",
     "motor>=3.3.0",
     "redis>=5.0.0",
     "pydantic>=2.5.0",

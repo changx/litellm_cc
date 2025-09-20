@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-LiteLLM Gateway - Main Entry Point
+Direct LLM Gateway - Main Entry Point
 
-High-performance LLM API Gateway with cost tracking and budget management.
+High-performance LLM API Gateway with direct provider integration, cost tracking and budget management.
 """
 
 import sys
