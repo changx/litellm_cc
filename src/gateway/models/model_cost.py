@@ -9,7 +9,8 @@ class ModelCost(MongoBaseModel):
     provider: str
     input_cost_per_million_tokens_usd: float
     output_cost_per_million_tokens_usd: float
-    cached_read_cost_per_million_tokens_usd: float
+    cache_write_cost_per_million_tokens_usd: float
+    cache_read_cost_per_million_tokens_usd: float
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -18,11 +19,13 @@ class ModelCostCreate(BaseModel):
     provider: str
     input_cost_per_million_tokens_usd: float
     output_cost_per_million_tokens_usd: float
-    cached_read_cost_per_million_tokens_usd: float
+    cache_write_cost_per_million_tokens_usd: float
+    cache_read_cost_per_million_tokens_usd: float
 
 
 class ModelCostUpdate(BaseModel):
     provider: Optional[str] = None
     input_cost_per_million_tokens_usd: Optional[float] = None
     output_cost_per_million_tokens_usd: Optional[float] = None
-    cached_read_cost_per_million_tokens_usd: Optional[float] = None
+    cache_write_cost_per_million_tokens_usd: Optional[float] = None
+    cache_read_cost_per_million_tokens_usd: Optional[float] = None

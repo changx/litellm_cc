@@ -51,15 +51,19 @@ async def chat_completions(
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
         total_tokens = response.usage.total_tokens
+        cache_write_tokens = response.usage.cache_write_tokens
+        cache_read_tokens = response.usage.cache_read_tokens
         
-        # No cache hit for direct API calls
-        is_cache_hit = False
+        # Determine if this is a cache hit
+        is_cache_hit = cache_read_tokens > 0
         
-        # Calculate cost
+        # Calculate cost with enhanced cache token support
         cost_usd = await CostCalculator.calculate_cost(
             model_name=model_name,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
+            cache_write_tokens=cache_write_tokens,
+            cache_read_tokens=cache_read_tokens,
             is_cache_hit=is_cache_hit
         )
         
@@ -103,7 +107,9 @@ async def chat_completions(
                 request_endpoint="/v1/chat/completions",
                 ip_address=request.client.host if request.client else None,
                 request_payload=request_data,
-                response_payload=openai_response
+                response_payload=openai_response,
+                cache_write_tokens=cache_write_tokens,
+                cache_read_tokens=cache_read_tokens
             )
         )
         
@@ -170,15 +176,19 @@ async def responses(
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
         total_tokens = response.usage.total_tokens
+        cache_write_tokens = response.usage.cache_write_tokens
+        cache_read_tokens = response.usage.cache_read_tokens
         
-        # No cache hit for direct API calls
-        is_cache_hit = False
+        # Determine if this is a cache hit
+        is_cache_hit = cache_read_tokens > 0
         
-        # Calculate cost
+        # Calculate cost with enhanced cache token support
         cost_usd = await CostCalculator.calculate_cost(
             model_name=model_name,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
+            cache_write_tokens=cache_write_tokens,
+            cache_read_tokens=cache_read_tokens,
             is_cache_hit=is_cache_hit
         )
         
@@ -222,7 +232,9 @@ async def responses(
                 request_endpoint="/v1/responses",
                 ip_address=request.client.host if request.client else None,
                 request_payload=request_data,
-                response_payload=openai_response
+                response_payload=openai_response,
+                cache_write_tokens=cache_write_tokens,
+                cache_read_tokens=cache_read_tokens
             )
         )
         
@@ -261,7 +273,9 @@ async def _log_usage(
     request_endpoint: str,
     ip_address: str,
     request_payload: Dict[str, Any],
-    response_payload: Dict[str, Any]
+    response_payload: Dict[str, Any],
+    cache_write_tokens: int = 0,
+    cache_read_tokens: int = 0
 ):
     try:
         await UsageLogRepository.create({
@@ -271,6 +285,8 @@ async def _log_usage(
             "is_cache_hit": is_cache_hit,
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
+            "cache_write_tokens": cache_write_tokens,
+            "cache_read_tokens": cache_read_tokens,
             "total_tokens": total_tokens,
             "cost_usd": cost_usd,
             "request_endpoint": request_endpoint,

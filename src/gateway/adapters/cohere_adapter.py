@@ -52,10 +52,13 @@ class CohereAdapter(BaseLLMAdapter):
         usage_data = response_data.get("usage", {})
         billed_usage = usage_data.get("billed_usage", {})
         
+        # Cohere doesn't currently support cache tokens explicitly
         usage = LLMUsage(
             input_tokens=billed_usage.get("input_tokens", 0),
             output_tokens=billed_usage.get("output_tokens", 0),
-            total_tokens=billed_usage.get("input_tokens", 0) + billed_usage.get("output_tokens", 0)
+            total_tokens=billed_usage.get("input_tokens", 0) + billed_usage.get("output_tokens", 0),
+            cache_write_tokens=0,
+            cache_read_tokens=0
         )
         
         return LLMResponse(

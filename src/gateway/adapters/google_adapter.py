@@ -62,10 +62,16 @@ class GoogleAdapter(BaseLLMAdapter):
         
         # Extract usage info
         usage_metadata = response_data.get("usageMetadata", {})
+        
+        # Google cache tokens (cachedContentTokenCount indicates cache usage)
+        cached_content_tokens = usage_metadata.get("cachedContentTokenCount", 0)
+        
         usage = LLMUsage(
             input_tokens=usage_metadata.get("promptTokenCount", 0),
             output_tokens=usage_metadata.get("candidatesTokenCount", 0),
-            total_tokens=usage_metadata.get("totalTokenCount", 0)
+            total_tokens=usage_metadata.get("totalTokenCount", 0),
+            cache_write_tokens=0,  # Google doesn't explicitly report cache writes
+            cache_read_tokens=cached_content_tokens
         )
         
         return LLMResponse(

@@ -11,6 +11,8 @@ class UsageLog(MongoBaseModel):
     is_cache_hit: bool
     input_tokens: int
     output_tokens: int
+    cache_write_tokens: int = 0
+    cache_read_tokens: int = 0
     total_tokens: int
     cost_usd: float
     request_endpoint: str

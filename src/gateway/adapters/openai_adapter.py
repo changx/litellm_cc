@@ -47,10 +47,16 @@ class OpenAIAdapter(BaseLLMAdapter):
         message = choice["message"]
         usage_data = response_data.get("usage", {})
         
+        # OpenAI cache tokens (if available in future versions)
+        cache_write_tokens = usage_data.get("cache_write_tokens", 0)
+        cache_read_tokens = usage_data.get("cache_read_tokens", 0)
+        
         usage = LLMUsage(
             input_tokens=usage_data.get("prompt_tokens", 0),
             output_tokens=usage_data.get("completion_tokens", 0),
-            total_tokens=usage_data.get("total_tokens", 0)
+            total_tokens=usage_data.get("total_tokens", 0),
+            cache_write_tokens=cache_write_tokens,
+            cache_read_tokens=cache_read_tokens
         )
         
         return LLMResponse(

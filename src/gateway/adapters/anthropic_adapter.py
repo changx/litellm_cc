@@ -48,10 +48,15 @@ class AnthropicAdapter(BaseLLMAdapter):
                     content += block.get("text", "")
         
         usage_data = response_data.get("usage", {})
+        cache_write_tokens = usage_data.get("cache_creation_input_tokens", 0)
+        cache_read_tokens = usage_data.get("cache_read_input_tokens", 0)
+        
         usage = LLMUsage(
             input_tokens=usage_data.get("input_tokens", 0),
             output_tokens=usage_data.get("output_tokens", 0),
-            total_tokens=usage_data.get("input_tokens", 0) + usage_data.get("output_tokens", 0)
+            total_tokens=usage_data.get("input_tokens", 0) + usage_data.get("output_tokens", 0),
+            cache_write_tokens=cache_write_tokens,
+            cache_read_tokens=cache_read_tokens
         )
         
         return LLMResponse(

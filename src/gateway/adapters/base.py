@@ -23,6 +23,8 @@ class LLMUsage(BaseModel):
     input_tokens: int
     output_tokens: int
     total_tokens: int
+    cache_write_tokens: int = 0
+    cache_read_tokens: int = 0
 
 
 class LLMResponse(BaseModel):
