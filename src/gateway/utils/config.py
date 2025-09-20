@@ -20,6 +20,18 @@ class Settings(BaseSettings):
     google_api_key: Optional[str] = None
     azure_api_key: Optional[str] = None
     
+    # LLM Provider API Base URLs (optional custom endpoints)
+    openai_api_base: Optional[str] = None
+    anthropic_api_base: Optional[str] = None
+    cohere_api_base: Optional[str] = None
+    google_api_base: Optional[str] = None
+    azure_api_base: Optional[str] = None
+    
+    # Custom provider support
+    custom_llm_provider: Optional[str] = None
+    custom_api_key: Optional[str] = None
+    custom_api_base: Optional[str] = None
+    
     # Admin settings
     admin_api_key: str = "admin-change-me"
     

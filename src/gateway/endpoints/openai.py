@@ -6,6 +6,7 @@ from ..auth.dependencies import get_current_user
 from ..models import ApiKey, Account
 from ..database.operations import AccountRepository, UsageLogRepository
 from ..utils.cost_calculator import CostCalculator
+from ..utils.llm_config import configure_litellm_for_request
 
 router = APIRouter()
 
@@ -27,8 +28,11 @@ async def chat_completions(
         )
     
     try:
+        # Configure request with custom API base URLs if needed
+        enhanced_request = configure_litellm_for_request(model_name, request_data)
+        
         # Call LiteLLM
-        response = await litellm.acompletion(**request_data)
+        response = await litellm.acompletion(**enhanced_request)
         
         # Extract usage information
         usage = response.get("usage", {})

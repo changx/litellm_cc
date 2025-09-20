@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List
+from typing import List, Dict, Any
 from ..auth.dependencies import authenticate_admin
 from ..models import (
     Account, AccountCreate, AccountUpdate,
@@ -14,6 +14,7 @@ from ..database.operations import (
     UsageLogRepository
 )
 from ..cache.manager import cache_manager
+from ..utils.llm_config import get_supported_providers
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -196,3 +197,24 @@ async def get_api_key_usage_logs(
 ):
     logs = await UsageLogRepository.get_by_api_key(api_key, limit, skip)
     return logs
+
+
+# Provider configuration
+@router.get("/providers")
+async def get_provider_configuration(
+    _: str = Depends(authenticate_admin)
+) -> Dict[str, Any]:
+    """
+    Get information about configured LLM providers and their custom endpoints.
+    """
+    providers = get_supported_providers()
+    
+    return {
+        "providers": providers,
+        "total_configured": len(providers),
+        "configuration_notes": {
+            "custom_endpoints": "Custom API base URLs are configured for providers that have api_base set",
+            "supported_formats": ["OpenAI Chat Completions", "Anthropic Messages", "LiteLLM Responses"],
+            "authentication": "All providers require valid API keys"
+        }
+    }

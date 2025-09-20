@@ -80,6 +80,7 @@ python main.py
 - `PATCH /admin/keys/{api_key}` - Update API key
 - `POST /admin/costs` - Create/update model cost
 - `GET /admin/usage/user/{user_id}` - Get user usage logs
+- `GET /admin/providers` - Get configured LLM providers and their endpoints
 
 All admin endpoints require authentication with the `ADMIN_API_KEY`.
 
@@ -94,11 +95,31 @@ Authorization: Bearer <your-api-key>
 
 Key environment variables:
 
+### Database & Infrastructure
 - `MONGO_URI`: MongoDB connection string
 - `REDIS_URL`: Redis connection string
+- `ADMIN_API_KEY`: Secure key for admin endpoints
+
+### LLM Provider Configuration
 - `OPENAI_API_KEY`: Your OpenAI API key
 - `ANTHROPIC_API_KEY`: Your Anthropic API key
-- `ADMIN_API_KEY`: Secure key for admin endpoints
+- `COHERE_API_KEY`: Your Cohere API key
+- `GOOGLE_API_KEY`: Your Google/Vertex AI key
+- `AZURE_API_KEY`: Your Azure OpenAI key
+
+### Custom API Endpoints (Optional)
+Override default provider endpoints with custom base URLs:
+- `OPENAI_API_BASE`: Custom OpenAI API endpoint
+- `ANTHROPIC_API_BASE`: Custom Anthropic API endpoint  
+- `COHERE_API_BASE`: Custom Cohere API endpoint
+- `GOOGLE_API_BASE`: Vertex AI project ID or custom endpoint
+- `AZURE_API_BASE`: Azure OpenAI resource endpoint
+
+### Custom Provider Support
+For private or self-hosted LLM models:
+- `CUSTOM_LLM_PROVIDER`: Custom provider name
+- `CUSTOM_API_KEY`: API key for custom provider
+- `CUSTOM_API_BASE`: Base URL for custom provider API
 
 See `.env.example` for all available configuration options.
 

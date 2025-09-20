@@ -6,6 +6,7 @@ from ..auth.dependencies import get_current_user
 from ..models import ApiKey, Account
 from ..database.operations import AccountRepository, UsageLogRepository
 from ..utils.cost_calculator import CostCalculator
+from ..utils.llm_config import configure_litellm_for_request
 
 router = APIRouter()
 
@@ -30,8 +31,11 @@ async def messages(
         # Convert Anthropic format to LiteLLM compatible format
         litellm_request = _convert_anthropic_to_litellm(request_data)
         
+        # Configure request with custom API base URLs if needed
+        enhanced_request = configure_litellm_for_request(model_name, litellm_request)
+        
         # Call LiteLLM
-        response = await litellm.acompletion(**litellm_request)
+        response = await litellm.acompletion(**enhanced_request)
         
         # Convert LiteLLM response back to Anthropic format
         anthropic_response = _convert_litellm_to_anthropic(response)

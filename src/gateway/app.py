@@ -29,17 +29,42 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting LiteLLM Gateway...")
     
-    # Set LiteLLM API keys
+    # Set LiteLLM API keys and base URLs
     if settings.openai_api_key:
         litellm.openai_key = settings.openai_api_key
+    if settings.openai_api_base:
+        litellm.api_base = settings.openai_api_base
+        logger.info(f"Set OpenAI API base to: {settings.openai_api_base}")
+        
     if settings.anthropic_api_key:
         litellm.anthropic_key = settings.anthropic_api_key
+    if settings.anthropic_api_base:
+        litellm.anthropic_api_base = settings.anthropic_api_base
+        logger.info(f"Set Anthropic API base to: {settings.anthropic_api_base}")
+        
     if settings.cohere_api_key:
         litellm.cohere_key = settings.cohere_api_key
+    if settings.cohere_api_base:
+        litellm.cohere_api_base = settings.cohere_api_base
+        logger.info(f"Set Cohere API base to: {settings.cohere_api_base}")
+        
     if settings.google_api_key:
         litellm.google_key = settings.google_api_key
+    if settings.google_api_base:
+        litellm.vertex_ai_project = settings.google_api_base  # For Vertex AI
+        logger.info(f"Set Google/Vertex AI endpoint to: {settings.google_api_base}")
+        
     if settings.azure_api_key:
         litellm.azure_key = settings.azure_api_key
+    if settings.azure_api_base:
+        litellm.azure_api_base = settings.azure_api_base
+        logger.info(f"Set Azure API base to: {settings.azure_api_base}")
+        
+    # Custom provider support
+    if settings.custom_llm_provider and settings.custom_api_key and settings.custom_api_base:
+        # Set custom provider configuration
+        litellm.set_verbose = True  # Enable verbose logging for custom providers
+        logger.info(f"Configured custom provider: {settings.custom_llm_provider} at {settings.custom_api_base}")
     
     # Connect to databases
     try:
