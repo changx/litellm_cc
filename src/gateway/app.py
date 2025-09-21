@@ -4,14 +4,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import litellm
 
 from .utils.config import settings
 from .database.connection import db_manager
 from .cache.manager import cache_manager
 from .endpoints.openai import router as openai_router
 from .endpoints.anthropic import router as anthropic_router
-from .endpoints.litellm_responses import router as litellm_router
 from .admin.routes import router as admin_router
 
 
@@ -27,43 +25,31 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("Starting LiteLLM Gateway...")
+    logger.info("Starting Direct LLM Gateway...")
     
-    # Set LiteLLM API keys and base URLs
+    # Log configured providers
     if settings.openai_api_key:
-        litellm.openai_key = settings.openai_api_key
-    if settings.openai_api_base:
-        litellm.api_base = settings.openai_api_base
-        logger.info(f"Set OpenAI API base to: {settings.openai_api_base}")
+        base_info = f" at {settings.openai_api_base}" if settings.openai_api_base else ""
+        logger.info(f"Configured OpenAI provider{base_info}")
         
     if settings.anthropic_api_key:
-        litellm.anthropic_key = settings.anthropic_api_key
-    if settings.anthropic_api_base:
-        litellm.anthropic_api_base = settings.anthropic_api_base
-        logger.info(f"Set Anthropic API base to: {settings.anthropic_api_base}")
+        base_info = f" at {settings.anthropic_api_base}" if settings.anthropic_api_base else ""
+        logger.info(f"Configured Anthropic provider{base_info}")
         
     if settings.cohere_api_key:
-        litellm.cohere_key = settings.cohere_api_key
-    if settings.cohere_api_base:
-        litellm.cohere_api_base = settings.cohere_api_base
-        logger.info(f"Set Cohere API base to: {settings.cohere_api_base}")
+        base_info = f" at {settings.cohere_api_base}" if settings.cohere_api_base else ""
+        logger.info(f"Configured Cohere provider{base_info}")
         
     if settings.google_api_key:
-        litellm.google_key = settings.google_api_key
-    if settings.google_api_base:
-        litellm.vertex_ai_project = settings.google_api_base  # For Vertex AI
-        logger.info(f"Set Google/Vertex AI endpoint to: {settings.google_api_base}")
+        base_info = f" at {settings.google_api_base}" if settings.google_api_base else ""
+        logger.info(f"Configured Google provider{base_info}")
         
     if settings.azure_api_key:
-        litellm.azure_key = settings.azure_api_key
-    if settings.azure_api_base:
-        litellm.azure_api_base = settings.azure_api_base
-        logger.info(f"Set Azure API base to: {settings.azure_api_base}")
+        base_info = f" at {settings.azure_api_base}" if settings.azure_api_base else ""
+        logger.info(f"Configured Azure provider{base_info}")
         
     # Custom provider support
     if settings.custom_llm_provider and settings.custom_api_key and settings.custom_api_base:
-        # Set custom provider configuration
-        litellm.set_verbose = True  # Enable verbose logging for custom providers
         logger.info(f"Configured custom provider: {settings.custom_llm_provider} at {settings.custom_api_base}")
     
     # Connect to databases
@@ -84,12 +70,12 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to connect to Redis: {e}")
         raise
     
-    logger.info("LiteLLM Gateway started successfully")
+    logger.info("Direct LLM Gateway started successfully")
     
     yield
     
     # Shutdown
-    logger.info("Shutting down LiteLLM Gateway...")
+    logger.info("Shutting down Direct LLM Gateway...")
     
     try:
         await cache_manager.disconnect()
@@ -103,12 +89,12 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error disconnecting from MongoDB: {e}")
     
-    logger.info("LiteLLM Gateway shutdown complete")
+    logger.info("Direct LLM Gateway shutdown complete")
 
 
 app = FastAPI(
-    title="LiteLLM Gateway",
-    description="High-performance LLM API Gateway with cost tracking and budget management",
+    title="Direct LLM Gateway",
+    description="High-performance LLM API Gateway with direct provider integration and cost tracking",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -138,7 +124,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def health_check():
     return {
         "status": "healthy",
-        "service": "litellm-gateway",
+        "service": "direct-llm-gateway",
         "version": "1.0.0"
     }
 
@@ -146,7 +132,6 @@ async def health_check():
 # Include routers
 app.include_router(openai_router, tags=["OpenAI"])
 app.include_router(anthropic_router, tags=["Anthropic"])
-app.include_router(litellm_router, tags=["LiteLLM"])
 app.include_router(admin_router, tags=["Admin"])
 
 

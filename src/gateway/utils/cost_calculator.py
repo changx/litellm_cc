@@ -24,6 +24,8 @@ class CostCalculator:
         model_name: str,
         input_tokens: int,
         output_tokens: int,
+        cache_write_tokens: int = 0,
+        cache_read_tokens: int = 0,
         is_cache_hit: bool = False
     ) -> float:
         model_cost = await CostCalculator.get_model_cost(model_name)
@@ -32,11 +34,16 @@ class CostCalculator:
             
         # Calculate cost based on token usage
         input_cost = (input_tokens / 1_000_000) * model_cost.input_cost_per_million_tokens_usd
+        output_cost = (output_tokens / 1_000_000) * model_cost.output_cost_per_million_tokens_usd
         
-        if is_cache_hit:
-            # Use cached read cost for cached responses
-            output_cost = (output_tokens / 1_000_000) * model_cost.cached_read_cost_per_million_tokens_usd
-        else:
-            output_cost = (output_tokens / 1_000_000) * model_cost.output_cost_per_million_tokens_usd
+        # Calculate cache costs
+        cache_write_cost = (cache_write_tokens / 1_000_000) * model_cost.cache_write_cost_per_million_tokens_usd
+        cache_read_cost = (cache_read_tokens / 1_000_000) * model_cost.cache_read_cost_per_million_tokens_usd
+        
+        # For backward compatibility: if is_cache_hit is True and cache_read_tokens is 0,
+        # treat output tokens as cache read tokens
+        if is_cache_hit and cache_read_tokens == 0:
+            cache_read_cost = (output_tokens / 1_000_000) * model_cost.cache_read_cost_per_million_tokens_usd
+            output_cost = 0.0  # Don't double-count output tokens as both output and cache read
             
-        return input_cost + output_cost
+        return input_cost + output_cost + cache_write_cost + cache_read_cost

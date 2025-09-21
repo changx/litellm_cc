@@ -14,7 +14,7 @@ from ..database.operations import (
     UsageLogRepository
 )
 from ..cache.manager import cache_manager
-from ..utils.llm_config import get_supported_providers
+from ..utils.provider_info import get_supported_providers
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
