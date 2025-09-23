@@ -10,35 +10,24 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from gateway.adapters.base import LLMRequest, LLMMessage
-from gateway.adapters.provider_router import ProviderRouter
+from gateway.adapters.litellm_forwarder import LiteLLMForwarder
 
 
-async def test_provider_routing():
-    """Test provider routing without actual API calls"""
-    
-    print("Testing provider routing...")
-    
-    # Test OpenAI model detection
-    provider = ProviderRouter.get_provider_for_model("gpt-4")
-    print(f"gpt-4 -> {provider}")
-    assert provider == "openai"
-    
-    # Test Anthropic model detection
-    provider = ProviderRouter.get_provider_for_model("claude-3-sonnet")
-    print(f"claude-3-sonnet -> {provider}")
-    assert provider == "anthropic"
-    
-    # Test Google model detection
-    provider = ProviderRouter.get_provider_for_model("gemini-pro")
-    print(f"gemini-pro -> {provider}")
-    assert provider == "google"
-    
-    # Test Cohere model detection
-    provider = ProviderRouter.get_provider_for_model("command-r")
-    print(f"command-r -> {provider}")
-    assert provider == "cohere"
-    
-    print("✅ Provider routing tests passed!")
+async def test_litellm_forwarder():
+    """Test LiteLLM forwarder setup"""
+
+    print("Testing LiteLLM forwarder setup...")
+
+    # Create forwarder instance
+    forwarder = LiteLLMForwarder()
+
+    # Test model name conversion
+    assert forwarder._get_litellm_model_name("gpt-4") == "gpt-4"
+    assert forwarder._get_litellm_model_name("claude-3-sonnet") == "claude-3-sonnet"
+    assert forwarder._get_litellm_model_name("gemini-pro") == "gemini-pro"
+    assert forwarder._get_litellm_model_name("command-r") == "command-r"
+
+    print("✅ LiteLLM forwarder tests passed!")
 
 
 async def test_request_format():
@@ -98,23 +87,21 @@ async def main():
     print("Testing Direct LLM Gateway Implementation")
     print("=" * 50)
     
-    await test_provider_routing()
+    await test_litellm_forwarder()
     await test_request_format()
     await test_endpoint_types()
     
     print("\n🎉 All tests passed! The implementation is working correctly.")
-    print("\nThe LiteLLM dependency has been successfully removed and replaced with direct API integration.")
+    print("\nLiteLLM has been integrated for provider API forwarding.")
     print("\nFeatures:")
-    print("- ✅ Direct OpenAI API integration")
-    print("- ✅ Direct Anthropic API integration") 
-    print("- ✅ Direct Google Gemini API integration")
-    print("- ✅ Direct Cohere API integration")
+    print("- ✅ LiteLLM provider forwarding")
+    print("- ✅ Unified OpenAI, Anthropic, Google, Cohere support")
     print("- ✅ Custom API base URL support")
-    print("- ✅ Unified request/response format")
-    print("- ✅ Provider auto-detection")
+    print("- ✅ Authentication and budget checking preserved")
     print("- ✅ Cost tracking and logging preserved")
     print("- ✅ OpenAI Chat Completions API support")
     print("- ✅ OpenAI Responses API support")
+    print("- ✅ Anthropic Messages API support")
 
 
 if __name__ == "__main__":

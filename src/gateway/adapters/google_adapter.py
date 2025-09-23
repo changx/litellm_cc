@@ -1,34 +1,29 @@
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from .base import BaseLLMAdapter, LLMRequest, LLMResponse, LLMUsage
 
 
 class GoogleAdapter(BaseLLMAdapter):
     """Google Gemini API adapter"""
-    
+
     def get_default_api_base(self) -> str:
         return "https://generativelanguage.googleapis.com"
-    
+
     def get_headers(self) -> Dict[str, str]:
-        return {
-            "x-goog-api-key": self.api_key,
-            "Content-Type": "application/json"
-        }
-    
+        return {"x-goog-api-key": self.api_key, "Content-Type": "application/json"}
+
     def get_endpoint(self, model: str, endpoint_type: str = "chat") -> str:
         return f"/v1beta/models/{model}:generateContent"
-    
+
     def transform_request(self, request: LLMRequest) -> Dict[str, Any]:
         """Transform to Google Gemini format"""
         contents = []
         for msg in request.messages:
             role = "user" if msg.role in ["user", "system"] else "model"
-            contents.append({
-                "role": role,
-                "parts": [{"text": msg.content}]
-            })
-        
+            contents.append({"role": role, "parts": [{"text": msg.content}]})
+
         data = {"contents": contents}
-        
+
         # Add generation config if parameters are provided
         generation_config = {}
         if request.max_tokens is not None:
@@ -39,45 +34,45 @@ class GoogleAdapter(BaseLLMAdapter):
             generation_config["topP"] = request.top_p
         if request.stop:
             generation_config["stopSequences"] = request.stop
-        
+
         if generation_config:
             data["generationConfig"] = generation_config
-            
+
         return data
-    
+
     def transform_response(self, response_data: Dict[str, Any]) -> LLMResponse:
         """Transform Google response to unified format"""
         candidates = response_data.get("candidates", [])
         if not candidates:
             raise ValueError("No candidates in Google API response")
-        
+
         candidate = candidates[0]
         content_data = candidate.get("content", {})
         parts = content_data.get("parts", [])
-        
+
         content = ""
         for part in parts:
             if "text" in part:
                 content += part["text"]
-        
+
         # Extract usage info
         usage_metadata = response_data.get("usageMetadata", {})
-        
+
         # Google cache tokens (cachedContentTokenCount indicates cache usage)
         cached_content_tokens = usage_metadata.get("cachedContentTokenCount", 0)
-        
+
         usage = LLMUsage(
             input_tokens=usage_metadata.get("promptTokenCount", 0),
             output_tokens=usage_metadata.get("candidatesTokenCount", 0),
             total_tokens=usage_metadata.get("totalTokenCount", 0),
             cache_write_tokens=0,  # Google doesn't explicitly report cache writes
-            cache_read_tokens=cached_content_tokens
+            cache_read_tokens=cached_content_tokens,
         )
-        
+
         return LLMResponse(
             id=response_data.get("modelVersion", ""),
             model=response_data.get("modelVersion", ""),
             content=content,
             finish_reason=candidate.get("finishReason", "STOP"),
-            usage=usage
+            usage=usage,
         )
