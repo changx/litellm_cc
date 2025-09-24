@@ -3,7 +3,8 @@ Configuration management using Pydantic settings
 """
 import os
 from typing import Optional, List
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -39,10 +40,11 @@ class Settings(BaseSettings):
     max_request_size: int = Field(10 * 1024 * 1024, description="Max request size in bytes")
     request_timeout: int = Field(60, description="Request timeout in seconds")
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False
+    }
 
     def validate_provider_keys(self) -> List[str]:
         """Validate that at least one provider key is configured"""

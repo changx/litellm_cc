@@ -27,7 +27,7 @@ class AccountRepository(BaseRepository):
 
     async def create_account(self, account: Account) -> Account:
         """Create a new account"""
-        account_dict = account.dict(by_alias=True, exclude={"id"})
+        account_dict = account.model_dump(by_alias=True, exclude={"id"})
         result = await self.collection.insert_one(account_dict)
         account.id = result.inserted_id
         return account
@@ -72,7 +72,7 @@ class ApiKeyRepository(BaseRepository):
 
     async def create_api_key(self, api_key: ApiKey) -> ApiKey:
         """Create a new API key"""
-        api_key_dict = api_key.dict(by_alias=True, exclude={"id"})
+        api_key_dict = api_key.model_dump(by_alias=True, exclude={"id"})
         result = await self.collection.insert_one(api_key_dict)
         api_key.id = result.inserted_id
         return api_key
@@ -117,7 +117,7 @@ class ModelCostRepository(BaseRepository):
 
     async def create_or_update_cost(self, model_cost: ModelCost) -> ModelCost:
         """Create or update model cost configuration"""
-        model_cost_dict = model_cost.dict(by_alias=True, exclude={"id"})
+        model_cost_dict = model_cost.model_dump(by_alias=True, exclude={"id"})
         result = await self.collection.find_one_and_update(
             {"model_name": model_cost.model_name},
             {"$set": model_cost_dict},
@@ -153,7 +153,7 @@ class UsageLogRepository(BaseRepository):
 
     async def create_log(self, usage_log: UsageLog) -> UsageLog:
         """Create a new usage log entry"""
-        log_dict = usage_log.dict(by_alias=True, exclude={"id"})
+        log_dict = usage_log.model_dump(by_alias=True, exclude={"id"})
         result = await self.collection.insert_one(log_dict)
         usage_log.id = result.inserted_id
         return usage_log

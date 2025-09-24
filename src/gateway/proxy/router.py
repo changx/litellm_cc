@@ -151,10 +151,10 @@ class ProxyRouter:
             usage_data = self.litellm_client.extract_usage_from_response(response)
 
             # Convert response to dictionary for JSON serialization
-            if hasattr(response, 'dict'):
-                response_dict = response.dict()
-            elif hasattr(response, 'model_dump'):
+            if hasattr(response, 'model_dump'):
                 response_dict = response.model_dump()
+            elif hasattr(response, 'dict'):
+                response_dict = response.dict()
             else:
                 response_dict = dict(response)
 
@@ -182,10 +182,10 @@ class ProxyRouter:
         except Exception as e:
             logger.error(f"Error handling non-streaming response: {e}")
             # Still return the response even if billing failed
-            if hasattr(response, 'dict'):
-                response_dict = response.dict()
-            elif hasattr(response, 'model_dump'):
+            if hasattr(response, 'model_dump'):
                 response_dict = response.model_dump()
+            elif hasattr(response, 'dict'):
+                response_dict = response.dict()
             else:
                 response_dict = dict(response)
 
