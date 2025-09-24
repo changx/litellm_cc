@@ -26,11 +26,24 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting LLM Gateway application")
 
+    # Display configuration (for debugging)
+    settings.log_configuration()
+
     # Validate configuration
     try:
-        missing_keys = settings.validate_provider_keys()
+        missing_keys = settings.validate_provider_keys(strict=False)
+        available_providers = settings.get_available_providers()
+
         if missing_keys:
             logger.warning(f"Missing provider keys: {missing_keys}")
+
+        if available_providers:
+            logger.info(f"Available LLM providers: {available_providers}")
+        else:
+            logger.warning(
+                "No LLM provider API keys configured! "
+                "Set OPENAI_API_KEY or ANTHROPIC_API_KEY to enable LLM functionality."
+            )
     except ValueError as e:
         logger.error(f"Configuration error: {e}")
         raise

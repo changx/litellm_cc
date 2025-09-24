@@ -43,10 +43,13 @@ class Settings(BaseSettings):
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
-        "case_sensitive": False
+        "case_sensitive": False,
+        "env_prefix": "",
+        "validate_default": True,
+        "extra": "ignore"
     }
 
-    def validate_provider_keys(self) -> List[str]:
+    def validate_provider_keys(self, strict: bool = True) -> List[str]:
         """Validate that at least one provider key is configured"""
         missing_keys = []
 
@@ -56,10 +59,39 @@ class Settings(BaseSettings):
         if not self.anthropic_api_key:
             missing_keys.append("ANTHROPIC_API_KEY")
 
-        if len(missing_keys) == 2:
-            raise ValueError("At least one provider API key must be configured")
+        if len(missing_keys) == 2 and strict:
+            raise ValueError(
+                "At least one provider API key must be configured. "
+                "Set OPENAI_API_KEY or ANTHROPIC_API_KEY environment variable."
+            )
 
         return missing_keys
+
+    def get_available_providers(self) -> List[str]:
+        """Get list of available providers based on configured API keys"""
+        providers = []
+        if self.openai_api_key:
+            providers.append("openai")
+        if self.anthropic_api_key:
+            providers.append("anthropic")
+        return providers
+
+    def log_configuration(self):
+        """Log current configuration for debugging (without sensitive data)"""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        logger.info(f"Configuration loaded:")
+        logger.info(f"  Host: {self.host}:{self.port}")
+        logger.info(f"  Log Level: {self.log_level}")
+        logger.info(f"  MongoDB URI: {self.mongo_uri}")
+        logger.info(f"  MongoDB DB: {self.mongo_db_name}")
+        logger.info(f"  Redis URL: {self.redis_url}")
+        logger.info(f"  Cache Size: {self.cache_size}")
+        logger.info(f"  Cache TTL: {self.cache_ttl}s")
+        logger.info(f"  OpenAI API Key: {'✓ Set' if self.openai_api_key else '✗ Not Set'}")
+        logger.info(f"  Anthropic API Key: {'✓ Set' if self.anthropic_api_key else '✗ Not Set'}")
+        logger.info(f"  Admin API Key: {'✓ Set' if self.admin_api_key else '✗ Not Set'}")
 
 
 # Global settings instance

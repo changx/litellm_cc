@@ -11,9 +11,11 @@ services:
       - REDIS_URL=redis://redis:6379
       - ADMIN_API_KEY=admin-secure-key-change-me
       - LOG_LEVEL=INFO
-      # Add your provider API keys here
-      # - OPENAI_API_KEY=sk-your-openai-key
-      # - ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
+      # Provider API keys (uncomment and set your keys)
+      # - OPENAI_API_KEY=sk-your-openai-key-here
+      # - ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here
+    env_file:
+      - .env
     depends_on:
       - mongodb
       - redis
