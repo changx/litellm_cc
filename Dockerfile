@@ -12,7 +12,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     build-essential \
     g++ \
-    python3.12-dev \
+    python3-dev \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
