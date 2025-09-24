@@ -1,4 +1,5 @@
-FROM astral/uv:0.8.19-python3.12-bookworm-slim
+# Multi-stage build to reduce final image size
+FROM astral/uv:0.8.19-python3.12-bookworm-slim as builder
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -7,9 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies (curl for health check)
+# Install build dependencies for madoka package
 RUN apt-get update && apt-get install -y \
-    curl \
+    build-essential \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy project files
@@ -19,6 +21,24 @@ COPY main.py ./
 
 # Install dependencies using uv (production only)
 RUN uv sync --frozen --no-dev
+
+# Production stage
+FROM astral/uv:0.8.19-python3.12-bookworm-slim as production
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Set work directory
+WORKDIR /app
+
+# Install only runtime dependencies (curl for health check)
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the entire environment from builder
+COPY --from=builder /app /app
 
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app

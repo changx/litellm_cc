@@ -1,9 +1,9 @@
 [project]
-name = "direct-llm-gateway"
+name = "llm-gateway"
 version = "0.1.0"
-description = "Direct LLM Gateway with native provider integration"
+description = "High-performance LLM API Gateway with cost tracking and budget management"
 authors = [
-    {name = "Direct LLM Gateway", email = "admin@example.com"}
+    {name = "LLM Gateway", email = "admin@example.com"}
 ]
 dependencies = [
     "fastapi>=0.104.0",
@@ -16,7 +16,6 @@ dependencies = [
     "python-multipart>=0.0.6",
     "httpx>=0.25.0",
     "litellm>=1.77.3",
-    "asyncio>=4.0.0",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
