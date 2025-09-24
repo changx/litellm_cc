@@ -8,10 +8,12 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Set work directory
 WORKDIR /app
 
-# Install build dependencies for madoka package
+# Install build dependencies for native Python packages (madoka, etc.)
 RUN apt-get update && apt-get install -y \
     build-essential \
     g++ \
+    python3.12-dev \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy project files
