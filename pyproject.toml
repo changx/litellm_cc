@@ -16,6 +16,7 @@ dependencies = [
     "python-multipart>=0.0.6",
     "httpx>=0.25.0",
     "litellm>=1.77.3",
+    "asyncio>=4.0.0",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
