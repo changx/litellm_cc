@@ -7,10 +7,13 @@ services:
       - "8000:8000"
     environment:
       - MONGO_URI=mongodb://mongodb:27017
-      - MONGO_DB_NAME=litellm_gateway
+      - MONGO_DB_NAME=llm_gateway
       - REDIS_URL=redis://redis:6379
       - ADMIN_API_KEY=admin-secure-key-change-me
       - LOG_LEVEL=INFO
+      # Add your provider API keys here
+      # - OPENAI_API_KEY=sk-your-openai-key
+      # - ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
     depends_on:
       - mongodb
       - redis
@@ -28,7 +31,7 @@ services:
     volumes:
       - mongodb_data:/data/db
     environment:
-      - MONGO_INITDB_DATABASE=litellm_gateway
+      - MONGO_INITDB_DATABASE=llm_gateway
     restart: unless-stopped
 
   redis:
