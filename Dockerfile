@@ -18,11 +18,11 @@ RUN apt-get update && apt-get install -y \
 
 # Copy project files
 COPY pyproject.toml uv.lock README.md ./
-COPY src/ ./src/
-COPY main.py ./
-
 # Install dependencies using uv (production only)
 RUN uv sync --frozen --no-dev
+
+COPY src/ ./src/
+COPY main.py ./
 
 # Production stage
 FROM astral/uv:0.8.19-python3.12-bookworm-slim AS production
