@@ -1,12 +1,14 @@
 """
 LiteLLM client wrapper for provider routing
 """
-import os
+
 import logging
-from typing import Dict, Any, AsyncGenerator, Union, Optional
+import os
 from enum import Enum
+from typing import Any, AsyncGenerator, Dict, Union
+
 import litellm
-from litellm import ModelResponse, CustomStreamWrapper
+from litellm import CustomStreamWrapper, ModelResponse
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +20,7 @@ litellm.set_verbose = False
 
 class Provider(str, Enum):
     """Supported LLM providers"""
+
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
 
@@ -33,8 +36,10 @@ class LiteLLMClient:
             },
             Provider.ANTHROPIC: {
                 "api_key": os.getenv("ANTHROPIC_API_KEY"),
-                "api_base": os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com"),
-            }
+                "api_base": os.getenv(
+                    "ANTHROPIC_BASE_URL", "https://api.anthropic.com"
+                ),
+            },
         }
 
     def get_provider_from_endpoint(self, endpoint: str) -> Provider:
@@ -62,10 +67,7 @@ class LiteLLMClient:
         return config
 
     async def completion(
-        self,
-        provider: Provider,
-        request_data: Dict[str, Any],
-        stream: bool = False
+        self, provider: Provider, request_data: Dict[str, Any], stream: bool = False
     ) -> Union[ModelResponse, AsyncGenerator[str, None]]:
         """
         Execute completion request via LiteLLM
@@ -76,7 +78,7 @@ class LiteLLMClient:
         litellm_args = {
             **request_data,  # Pass through all client request data
             "api_key": config["api_key"],
-            "stream": stream
+            "stream": stream,
         }
 
         # Add base URL if configured
@@ -90,13 +92,8 @@ class LiteLLMClient:
             )
 
             response = await litellm.acompletion(**litellm_args)
-
-            if stream:
-                # Return the async generator directly
-                return response
-            else:
-                # Return the ModelResponse object
-                return response
+            logger.debug(f"LiteLLM response: {response}")
+            return response
 
         except Exception as e:
             logger.error(f"LiteLLM error with provider {provider}: {str(e)}")
@@ -108,40 +105,48 @@ class LiteLLMClient:
             "input_tokens": 0,
             "output_tokens": 0,
             "total_tokens": 0,
-            "is_cache_hit": False
+            "is_cache_hit": False,
         }
 
-        if hasattr(response, 'usage') and response.usage:
-            usage_data.update({
-                "input_tokens": getattr(response.usage, 'prompt_tokens', 0),
-                "output_tokens": getattr(response.usage, 'completion_tokens', 0),
-                "total_tokens": getattr(response.usage, 'total_tokens', 0)
-            })
+        if hasattr(response, "usage") and response.usage:
+            usage_data.update(
+                {
+                    "input_tokens": getattr(response.usage, "prompt_tokens", 0),
+                    "output_tokens": getattr(response.usage, "completion_tokens", 0),
+                    "total_tokens": getattr(response.usage, "total_tokens", 0),
+                }
+            )
 
         # Check for cache hit (LiteLLM specific)
-        if hasattr(response, '_cache_hit'):
+        if hasattr(response, "_cache_hit"):
             usage_data["is_cache_hit"] = response._cache_hit
 
         return usage_data
 
-    def extract_usage_from_stream(self, stream_wrapper: CustomStreamWrapper) -> Dict[str, Any]:
+    def extract_usage_from_stream(
+        self, stream_wrapper: CustomStreamWrapper
+    ) -> Dict[str, Any]:
         """Extract usage information from completed stream"""
         usage_data = {
             "input_tokens": 0,
             "output_tokens": 0,
             "total_tokens": 0,
-            "is_cache_hit": False
+            "is_cache_hit": False,
         }
 
         # For streaming responses, usage info is available after the stream completes
-        if hasattr(stream_wrapper, 'usage') and stream_wrapper.usage:
-            usage_data.update({
-                "input_tokens": getattr(stream_wrapper.usage, 'prompt_tokens', 0),
-                "output_tokens": getattr(stream_wrapper.usage, 'completion_tokens', 0),
-                "total_tokens": getattr(stream_wrapper.usage, 'total_tokens', 0)
-            })
+        if hasattr(stream_wrapper, "usage") and stream_wrapper.usage:
+            usage_data.update(
+                {
+                    "input_tokens": getattr(stream_wrapper.usage, "prompt_tokens", 0),
+                    "output_tokens": getattr(
+                        stream_wrapper.usage, "completion_tokens", 0
+                    ),
+                    "total_tokens": getattr(stream_wrapper.usage, "total_tokens", 0),
+                }
+            )
 
-        if hasattr(stream_wrapper, '_cache_hit'):
+        if hasattr(stream_wrapper, "_cache_hit"):
             usage_data["is_cache_hit"] = stream_wrapper._cache_hit
 
         return usage_data
