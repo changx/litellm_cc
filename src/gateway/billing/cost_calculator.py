@@ -34,6 +34,7 @@ class CostCalculator:
                 "input_cost_usd": 0.0,
                 "output_cost_usd": 0.0,
                 "cached_cost_usd": 0.0,
+                "cache_creation_cost_usd": 0.0,
                 "model_found": False,
                 "model_name": model_name,
             }
@@ -42,15 +43,20 @@ class CostCalculator:
         input_tokens = usage_data.get("input_tokens", 0)
         output_tokens = usage_data.get("output_tokens", 0)
         cached_tokens = usage_data.get("cached_tokens", 0)
+        cache_creation_tokens = usage_data.get("cache_creation_tokens", 0)
         is_cache_hit = usage_data.get("is_cache_hit", False)
 
         # Calculate individual costs
         input_cost = self._calculate_token_cost(
-            input_tokens, model_cost.input_cost_per_million_tokens_usd
+            input_tokens - cached_tokens, model_cost.input_cost_per_million_tokens_usd
         )
 
         output_cost = self._calculate_token_cost(
             output_tokens, model_cost.output_cost_per_million_tokens_usd
+        )
+
+        cache_creation_cost = self._calculate_token_cost(
+            cache_creation_tokens, model_cost.cache_write_cost_per_million_tokens_usd
         )
 
         cached_cost = 0.0
@@ -59,28 +65,31 @@ class CostCalculator:
                 cached_tokens, model_cost.cache_hit_cost_per_million_tokens_usd
             )
 
-        total_cost = input_cost + output_cost + cached_cost
+        total_cost = input_cost + cache_creation_cost + output_cost + cached_cost
 
         cost_breakdown = {
             "total_cost_usd": round(total_cost, 6),
             "input_cost_usd": round(input_cost, 6),
             "output_cost_usd": round(output_cost, 6),
             "cached_cost_usd": round(cached_cost, 6),
+            "cache_creation_cost_usd": round(cache_creation_cost, 6),
             "model_found": True,
             "model_name": model_name,
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "cached_tokens": cached_tokens,
             "is_cache_hit": is_cache_hit,
+            "cache_creation_tokens": cache_creation_tokens,
             "rate_input": model_cost.input_cost_per_million_tokens_usd,
             "rate_output": model_cost.output_cost_per_million_tokens_usd,
             "rate_cached": model_cost.cache_hit_cost_per_million_tokens_usd,
+            "rate_cache_creation": model_cost.cache_write_cost_per_million_tokens_usd,
         }
 
         logger.debug(
             f"Cost calculated for {model_name}: "
             f"${total_cost:.6f} "
-            f"(input: {input_tokens}, output: {output_tokens}, cached: {cached_tokens})"
+            f"(input: {input_tokens}, output: {output_tokens}, cached: {cached_tokens}, cache_creation: {cache_creation_tokens})"
         )
 
         return cost_breakdown

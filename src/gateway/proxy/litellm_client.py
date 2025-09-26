@@ -123,17 +123,27 @@ class LiteLLMClient:
         usage_data = {
             "input_tokens": 0,
             "output_tokens": 0,
+            "cached_tokens": 0,
+            "cache_creation_tokens": 0,
             "total_tokens": 0,
             "is_cache_hit": False,
         }
 
         if hasattr(response, "usage") and response.usage:
+            # PromptTokensDetailsWrapper
+
             usage_data.update(
                 {
                     "input_tokens": getattr(response.usage, "prompt_tokens", 0),
                     "output_tokens": getattr(response.usage, "completion_tokens", 0),
                     "total_tokens": getattr(response.usage, "total_tokens", 0),
                 }
+            )
+
+            prompt_tokens_details = getattr(response.usage, "prompt_tokens_details", {})
+            usage_data["cached_tokens"] = prompt_tokens_details.get("cached_tokens", 0)
+            usage_data["cache_creation_tokens"] = prompt_tokens_details.get(
+                "cache_creation_tokens", 0
             )
 
         # Check for cache hit (LiteLLM specific)
@@ -149,6 +159,8 @@ class LiteLLMClient:
         usage_data = {
             "input_tokens": 0,
             "output_tokens": 0,
+            "cached_tokens": 0,
+            "cache_creation_tokens": 0,
             "total_tokens": 0,
             "is_cache_hit": False,
         }
@@ -163,6 +175,14 @@ class LiteLLMClient:
                     ),
                     "total_tokens": getattr(stream_wrapper.usage, "total_tokens", 0),
                 }
+            )
+
+            prompt_tokens_details = getattr(
+                stream_wrapper.usage, "prompt_tokens_details", {}
+            )
+            usage_data["cached_tokens"] = prompt_tokens_details.get("cached_tokens", 0)
+            usage_data["cache_creation_tokens"] = prompt_tokens_details.get(
+                "cache_creation_tokens", 0
             )
 
         if hasattr(stream_wrapper, "_cache_hit"):
