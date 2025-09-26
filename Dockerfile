@@ -1,5 +1,5 @@
 # Multi-stage build to reduce final image size
-FROM astral/uv:0.8.19-python3.12-bookworm-slim as builder
+FROM astral/uv:0.8.19-python3.12-bookworm-slim AS builder
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -25,7 +25,7 @@ COPY main.py ./
 RUN uv sync --frozen --no-dev
 
 # Production stage
-FROM astral/uv:0.8.19-python3.12-bookworm-slim as production
+FROM astral/uv:0.8.19-python3.12-bookworm-slim AS production
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
