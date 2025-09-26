@@ -92,7 +92,7 @@ class LiteLLMClient:
             )
 
             response = await litellm.acompletion(**litellm_args)
-            logger.debug(f"LiteLLM response: {response}")
+            logger.debug(f"#response_debug litellm_client: {response}")
             return response
 
         except Exception as e:
