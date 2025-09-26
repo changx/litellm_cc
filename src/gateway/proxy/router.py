@@ -1,15 +1,19 @@
 """
 Main proxy router for handling LLM requests
 """
-import time
+
 import logging
-from typing import Dict, Any, Tuple
+import time
+from typing import Any, Dict, Tuple
+
 from fastapi import Request
 from fastapi.responses import JSONResponse, StreamingResponse
-from gateway.models import Account, ApiKey
+
 from gateway.auth.dependencies import require_model_access
 from gateway.billing import BillingManager
-from .litellm_client import LiteLLMClient, Provider
+from gateway.models import Account, ApiKey
+
+from .litellm_client import LiteLLMClient
 from .streaming import StreamingResponseHandler
 
 logger = logging.getLogger(__name__)
@@ -29,7 +33,7 @@ class ProxyRouter:
         api_key: ApiKey,
         account: Account,
         request_data: Dict[str, Any],
-        endpoint: str
+        endpoint: str,
     ) -> Tuple[JSONResponse, StreamingResponse]:
         """
         Route request to appropriate provider and handle response
@@ -46,8 +50,7 @@ class ProxyRouter:
             model_name = request_data.get("model")
             if not model_name:
                 return JSONResponse(
-                    status_code=400,
-                    content={"error": "Model name is required"}
+                    status_code=400, content={"error": "Model name is required"}
                 )
 
             # Check model access permissions
@@ -58,9 +61,7 @@ class ProxyRouter:
 
             # Execute the request through LiteLLM
             response = await self.litellm_client.completion(
-                provider=provider,
-                request_data=request_data,
-                stream=is_streaming
+                provider=provider, request_data=request_data, stream=is_streaming
             )
 
             if is_streaming:
@@ -71,10 +72,13 @@ class ProxyRouter:
                     account=account,
                     request_data=request_data,
                     endpoint=endpoint,
-                    client_ip=client_ip
+                    client_ip=client_ip,
                 )
             else:
                 # Handle non-streaming response
+                logger.debug(
+                    f"#response_debug router: non-streaming response: {response}"
+                )
                 return await self._handle_non_streaming_response(
                     response=response,
                     api_key=api_key,
@@ -82,7 +86,7 @@ class ProxyRouter:
                     request_data=request_data,
                     endpoint=endpoint,
                     client_ip=client_ip,
-                    processing_time_ms=(time.time() - start_time) * 1000
+                    processing_time_ms=(time.time() - start_time) * 1000,
                 )
 
         except Exception as e:
@@ -97,7 +101,7 @@ class ProxyRouter:
                     endpoint=endpoint,
                     error_message=str(e),
                     client_ip=client_ip,
-                    processing_time_ms=(time.time() - start_time) * 1000
+                    processing_time_ms=(time.time() - start_time) * 1000,
                 )
             except Exception as log_error:
                 logger.error(f"Failed to log error request: {log_error}")
@@ -109,9 +113,9 @@ class ProxyRouter:
                     content={
                         "error": {
                             "message": "Rate limit exceeded",
-                            "type": "rate_limit_exceeded"
+                            "type": "rate_limit_exceeded",
                         }
-                    }
+                    },
                 )
             elif "invalid" in str(e).lower() and "key" in str(e).lower():
                 return JSONResponse(
@@ -119,9 +123,9 @@ class ProxyRouter:
                     content={
                         "error": {
                             "message": "Invalid API key provided to upstream service",
-                            "type": "invalid_request_error"
+                            "type": "invalid_request_error",
                         }
-                    }
+                    },
                 )
             else:
                 return JSONResponse(
@@ -129,9 +133,9 @@ class ProxyRouter:
                     content={
                         "error": {
                             "message": "Internal server error",
-                            "type": "internal_error"
+                            "type": "internal_error",
                         }
-                    }
+                    },
                 )
 
     async def _handle_non_streaming_response(
@@ -142,7 +146,7 @@ class ProxyRouter:
         request_data: Dict[str, Any],
         endpoint: str,
         client_ip: str = None,
-        processing_time_ms: float = 0
+        processing_time_ms: float = 0,
     ) -> JSONResponse:
         """Handle non-streaming response with billing"""
 
@@ -151,9 +155,9 @@ class ProxyRouter:
             usage_data = self.litellm_client.extract_usage_from_response(response)
 
             # Convert response to dictionary for JSON serialization
-            if hasattr(response, 'model_dump'):
+            if hasattr(response, "model_dump"):
                 response_dict = response.model_dump()
-            elif hasattr(response, 'dict'):
+            elif hasattr(response, "dict"):
                 response_dict = response.dict()
             else:
                 response_dict = dict(response)
@@ -168,7 +172,7 @@ class ProxyRouter:
                 request_payload=request_data,
                 response_payload=response_dict,
                 client_ip=client_ip,
-                processing_time_ms=processing_time_ms
+                processing_time_ms=processing_time_ms,
             )
 
             logger.info(
@@ -182,9 +186,9 @@ class ProxyRouter:
         except Exception as e:
             logger.error(f"Error handling non-streaming response: {e}")
             # Still return the response even if billing failed
-            if hasattr(response, 'model_dump'):
+            if hasattr(response, "model_dump"):
                 response_dict = response.model_dump()
-            elif hasattr(response, 'dict'):
+            elif hasattr(response, "dict"):
                 response_dict = response.dict()
             else:
                 response_dict = dict(response)
