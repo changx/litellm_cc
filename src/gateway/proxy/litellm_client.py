@@ -9,6 +9,7 @@ from typing import Any, AsyncGenerator, Dict, Union
 
 import litellm
 from litellm import CustomStreamWrapper, ModelResponse
+from litellm.types.utils import PromptTokensDetailsWrapper
 
 logger = logging.getLogger(__name__)
 
@@ -140,10 +141,12 @@ class LiteLLMClient:
                 }
             )
 
-            prompt_tokens_details = getattr(response.usage, "prompt_tokens_details", {})
-            usage_data["cached_tokens"] = prompt_tokens_details.get("cached_tokens", 0)
-            usage_data["cache_creation_tokens"] = prompt_tokens_details.get(
-                "cache_creation_tokens", 0
+            prompt_tokens_details: PromptTokensDetailsWrapper = getattr(
+                response.usage, "prompt_tokens_details", PromptTokensDetailsWrapper()
+            )
+            usage_data["cached_tokens"] = prompt_tokens_details.cached_tokens
+            usage_data["cache_creation_tokens"] = (
+                prompt_tokens_details.cache_creation_tokens
             )
 
         # Check for cache hit (LiteLLM specific)
@@ -178,11 +181,13 @@ class LiteLLMClient:
             )
 
             prompt_tokens_details = getattr(
-                stream_wrapper.usage, "prompt_tokens_details", {}
+                stream_wrapper.usage,
+                "prompt_tokens_details",
+                PromptTokensDetailsWrapper(),
             )
-            usage_data["cached_tokens"] = prompt_tokens_details.get("cached_tokens", 0)
-            usage_data["cache_creation_tokens"] = prompt_tokens_details.get(
-                "cache_creation_tokens", 0
+            usage_data["cached_tokens"] = prompt_tokens_details.cached_tokens
+            usage_data["cache_creation_tokens"] = (
+                prompt_tokens_details.cache_creation_tokens
             )
 
         if hasattr(stream_wrapper, "_cache_hit"):

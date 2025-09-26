@@ -35,15 +35,15 @@ class StreamingResponseHandler:
 
         async def stream_with_billing():
             """Generator that yields stream chunks and handles billing at the end"""
-            collected_chunks = []
-            stream_wrapper = None
+            # collected_chunks = []
+            # stream_wrapper = None
 
             try:
                 # Stream the response chunks
                 async for chunk in stream_generator:
                     if chunk:
                         chunk_str = str(chunk)
-                        collected_chunks.append(chunk_str)
+                        # collected_chunks.append(chunk_str)
                         logger.debug(f"#response_debug streaming: {chunk_str}")
                         yield chunk_str
 
