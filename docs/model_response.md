@@ -1,0 +1,4 @@
+ModelResponse(id='chatcmpl-efba51ff-7863-4341-9276-f71fb92613b8', created=1758874254, model='claude-3-5-haiku-20241022', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='length', index=0, message=Message(content='I', role='assistant', tool_calls=None, function_call=None, provider_specific_fields={'citations': None, 'thinking_blocks': None}))], usage=Usage(completion_tokens=1, prompt_tokens=618, total_tokens=619, completion_tokens_details=None, prompt_tokens_details=PromptTokensDetailsWrapper(audio_tokens=None, cached_tokens=0, text_tokens=None, image_tokens=None, cache_creation_tokens=0, cache_creation_token_details=CacheCreationTokenDetails(ephemeral_5m_input_tokens=0, ephemeral_1h_input_tokens=0)), cache_creation_input_tokens=0, cache_read_input_tokens=0))
+
+
+

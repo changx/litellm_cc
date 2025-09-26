@@ -92,7 +92,26 @@ class LiteLLMClient:
             )
 
             response = await litellm.acompletion(**litellm_args)
-            logger.debug(f"#response_debug litellm_client: {response}")
+
+            # Debug response content based on type
+            if isinstance(response, CustomStreamWrapper):
+                logger.debug(
+                    f"#response_debug litellm_client: StreamWrapper(stream={stream}, model={request_data.get('model')})"
+                )
+            elif isinstance(response, ModelResponse):
+                # Extract key info from ModelResponse
+                model = getattr(response, "model", "unknown")
+                choices_count = len(getattr(response, "choices", []))
+                usage = getattr(response, "usage", None)
+                usage_info = f"usage={usage}" if usage else "no_usage"
+                logger.debug(
+                    f"#response_debug litellm_client: ModelResponse(model={model}, choices={choices_count}, {usage_info})"
+                )
+            else:
+                logger.debug(
+                    f"#response_debug litellm_client: {type(response).__name__}({response})"
+                )
+
             return response
 
         except Exception as e:

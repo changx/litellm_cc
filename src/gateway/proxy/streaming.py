@@ -1,13 +1,15 @@
 """
 Streaming response handling with proper billing
 """
+
 import json
 import logging
-from typing import AsyncGenerator, Dict, Any, Optional
-from fastapi import Response
+from typing import Any, AsyncGenerator, Dict, Optional
+
 from fastapi.responses import StreamingResponse
-from gateway.models import Account, ApiKey
+
 from gateway.billing import BillingManager
+from gateway.models import Account, ApiKey
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ class StreamingResponseHandler:
         account: Account,
         request_data: Dict[str, Any],
         endpoint: str,
-        client_ip: Optional[str] = None
+        client_ip: Optional[str] = None,
     ) -> StreamingResponse:
         """
         Handle streaming response with proper billing after stream completion
@@ -40,47 +42,13 @@ class StreamingResponseHandler:
                 # Stream the response chunks
                 async for chunk in stream_generator:
                     if chunk:
-                        # Store the stream wrapper reference for usage extraction
-                        if hasattr(chunk, '__self__'):
-                            stream_wrapper = chunk.__self__
-
-                        # Convert chunk to string if needed
-                        if hasattr(chunk, 'choices') and chunk.choices:
-                            # Standard OpenAI-format streaming chunk
-                            chunk_data = {
-                                "id": getattr(chunk, 'id', ''),
-                                "object": getattr(chunk, 'object', 'chat.completion.chunk'),
-                                "created": getattr(chunk, 'created', 0),
-                                "model": getattr(chunk, 'model', ''),
-                                "choices": []
-                            }
-
-                            for choice in chunk.choices:
-                                choice_data = {
-                                    "index": getattr(choice, 'index', 0),
-                                    "delta": {}
-                                }
-
-                                if hasattr(choice, 'delta'):
-                                    if hasattr(choice.delta, 'content') and choice.delta.content:
-                                        choice_data["delta"]["content"] = choice.delta.content
-                                    if hasattr(choice.delta, 'role') and choice.delta.role:
-                                        choice_data["delta"]["role"] = choice.delta.role
-
-                                if hasattr(choice, 'finish_reason'):
-                                    choice_data["finish_reason"] = choice.finish_reason
-
-                                chunk_data["choices"].append(choice_data)
-
-                            chunk_str = f"data: {json.dumps(chunk_data)}\n\n"
-                        else:
-                            # Fallback to string representation
-                            chunk_str = str(chunk)
-
+                        chunk_str = str(chunk)
                         collected_chunks.append(chunk_str)
+                        logger.debug(f"#response_debug streaming: {chunk_str}")
                         yield chunk_str
 
                 # Signal end of stream
+                logger.debug("#response_debug streaming: [DONE]")
                 yield "data: [DONE]\n\n"
 
             except Exception as e:
@@ -88,7 +56,7 @@ class StreamingResponseHandler:
                 error_chunk = {
                     "error": {
                         "message": "Streaming error occurred",
-                        "type": "stream_error"
+                        "type": "stream_error",
                     }
                 }
                 yield f"data: {json.dumps(error_chunk)}\n\n"
@@ -104,7 +72,7 @@ class StreamingResponseHandler:
                         request_data,
                         endpoint,
                         collected_chunks,
-                        client_ip
+                        client_ip,
                     )
                 except Exception as e:
                     logger.error(f"Error in post-stream billing: {e}")
@@ -115,8 +83,8 @@ class StreamingResponseHandler:
             headers={
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
-                "Content-Type": "text/plain; charset=utf-8"
-            }
+                "Content-Type": "text/plain; charset=utf-8",
+            },
         )
 
     async def _handle_post_stream_billing(
@@ -127,7 +95,7 @@ class StreamingResponseHandler:
         request_data: Dict[str, Any],
         endpoint: str,
         collected_chunks: list,
-        client_ip: Optional[str] = None
+        client_ip: Optional[str] = None,
     ):
         """Handle billing after stream completion"""
 
@@ -136,20 +104,28 @@ class StreamingResponseHandler:
             "input_tokens": 0,
             "output_tokens": 0,
             "total_tokens": 0,
-            "is_cache_hit": False
+            "is_cache_hit": False,
         }
 
         if stream_wrapper:
             try:
                 # Try to extract usage from the stream wrapper
-                if hasattr(stream_wrapper, 'usage') and stream_wrapper.usage:
-                    usage_data.update({
-                        "input_tokens": getattr(stream_wrapper.usage, 'prompt_tokens', 0),
-                        "output_tokens": getattr(stream_wrapper.usage, 'completion_tokens', 0),
-                        "total_tokens": getattr(stream_wrapper.usage, 'total_tokens', 0)
-                    })
+                if hasattr(stream_wrapper, "usage") and stream_wrapper.usage:
+                    usage_data.update(
+                        {
+                            "input_tokens": getattr(
+                                stream_wrapper.usage, "prompt_tokens", 0
+                            ),
+                            "output_tokens": getattr(
+                                stream_wrapper.usage, "completion_tokens", 0
+                            ),
+                            "total_tokens": getattr(
+                                stream_wrapper.usage, "total_tokens", 0
+                            ),
+                        }
+                    )
 
-                if hasattr(stream_wrapper, '_cache_hit'):
+                if hasattr(stream_wrapper, "_cache_hit"):
                     usage_data["is_cache_hit"] = stream_wrapper._cache_hit
 
             except Exception as e:
@@ -160,10 +136,12 @@ class StreamingResponseHandler:
             logger.warning("No usage data available from stream, attempting estimation")
             # This is a fallback - in production you might want to implement
             # more sophisticated token counting
-            content = ''.join(collected_chunks)
+            content = "".join(collected_chunks)
             estimated_tokens = len(content.split()) * 1.3  # Rough estimation
             usage_data["output_tokens"] = int(estimated_tokens)
-            usage_data["total_tokens"] = usage_data["input_tokens"] + usage_data["output_tokens"]
+            usage_data["total_tokens"] = (
+                usage_data["input_tokens"] + usage_data["output_tokens"]
+            )
 
         # Process billing
         await self.billing_manager.process_usage_and_bill(
@@ -174,7 +152,7 @@ class StreamingResponseHandler:
             request_endpoint=endpoint,
             request_payload=request_data,
             response_payload={"streaming": True, "chunks": len(collected_chunks)},
-            client_ip=client_ip
+            client_ip=client_ip,
         )
 
         logger.info(
