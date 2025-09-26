@@ -1,9 +1,10 @@
 """
 Cost calculation logic
 """
+
 import logging
-from typing import Dict, Any, Optional
-from gateway.models import ModelCost
+from typing import Any, Dict
+
 from gateway.cache import get_cache_manager
 
 logger = logging.getLogger(__name__)
@@ -16,9 +17,7 @@ class CostCalculator:
         self.cache_manager = get_cache_manager()
 
     async def calculate_cost(
-        self,
-        model_name: str,
-        usage_data: Dict[str, Any]
+        self, model_name: str, usage_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Calculate cost based on model and usage data
@@ -36,7 +35,7 @@ class CostCalculator:
                 "output_cost_usd": 0.0,
                 "cached_cost_usd": 0.0,
                 "model_found": False,
-                "model_name": model_name
+                "model_name": model_name,
             }
 
         # Extract token counts from usage data
@@ -47,20 +46,17 @@ class CostCalculator:
 
         # Calculate individual costs
         input_cost = self._calculate_token_cost(
-            input_tokens,
-            model_cost.input_cost_per_million_tokens_usd
+            input_tokens, model_cost.input_cost_per_million_tokens_usd
         )
 
         output_cost = self._calculate_token_cost(
-            output_tokens,
-            model_cost.output_cost_per_million_tokens_usd
+            output_tokens, model_cost.output_cost_per_million_tokens_usd
         )
 
         cached_cost = 0.0
         if is_cache_hit or cached_tokens > 0:
             cached_cost = self._calculate_token_cost(
-                cached_tokens,
-                model_cost.cached_read_cost_per_million_tokens_usd
+                cached_tokens, model_cost.cache_hit_cost_per_million_tokens_usd
             )
 
         total_cost = input_cost + output_cost + cached_cost
@@ -78,7 +74,7 @@ class CostCalculator:
             "is_cache_hit": is_cache_hit,
             "rate_input": model_cost.input_cost_per_million_tokens_usd,
             "rate_output": model_cost.output_cost_per_million_tokens_usd,
-            "rate_cached": model_cost.cached_read_cost_per_million_tokens_usd
+            "rate_cached": model_cost.cache_hit_cost_per_million_tokens_usd,
         }
 
         logger.debug(
@@ -99,7 +95,7 @@ class CostCalculator:
         self,
         model_name: str,
         estimated_input_tokens: int,
-        estimated_output_tokens: int = 0
+        estimated_output_tokens: int = 0,
     ) -> float:
         """
         Estimate cost for a request before processing
@@ -108,17 +104,17 @@ class CostCalculator:
         model_cost = await self.cache_manager.get_model_cost(model_name)
 
         if not model_cost:
-            logger.warning(f"No cost configuration for model {model_name}, using zero cost")
+            logger.warning(
+                f"No cost configuration for model {model_name}, using zero cost"
+            )
             return 0.0
 
         input_cost = self._calculate_token_cost(
-            estimated_input_tokens,
-            model_cost.input_cost_per_million_tokens_usd
+            estimated_input_tokens, model_cost.input_cost_per_million_tokens_usd
         )
 
         output_cost = self._calculate_token_cost(
-            estimated_output_tokens,
-            model_cost.output_cost_per_million_tokens_usd
+            estimated_output_tokens, model_cost.output_cost_per_million_tokens_usd
         )
 
         return input_cost + output_cost
@@ -137,9 +133,7 @@ class CostCalculator:
         return int(words * 1.3)
 
     async def estimate_request_cost(
-        self,
-        model_name: str,
-        request_data: Dict[str, Any]
+        self, model_name: str, request_data: Dict[str, Any]
     ) -> float:
         """
         Estimate cost for a complete request
@@ -173,6 +167,10 @@ class CostCalculator:
 
         # Estimate output tokens based on max_tokens parameter
         max_tokens = request_data.get("max_tokens", 0)
-        estimated_output_tokens = min(max_tokens, input_tokens) if max_tokens > 0 else int(input_tokens * 0.5)
+        estimated_output_tokens = (
+            min(max_tokens, input_tokens) if max_tokens > 0 else int(input_tokens * 0.5)
+        )
 
-        return await self.estimate_cost(model_name, input_tokens, estimated_output_tokens)
+        return await self.estimate_cost(
+            model_name, input_tokens, estimated_output_tokens
+        )

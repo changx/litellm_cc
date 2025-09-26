@@ -92,11 +92,11 @@ class ModelCostCreateRequest(BaseModel):
     output_cost_per_million_tokens_usd: float = Field(
         ..., ge=0, description="Cost per million output tokens in USD"
     )
-    cached_read_cost_per_million_tokens_usd: float = Field(
-        0.0, ge=0, description="Cost per million cached read tokens in USD"
+    cache_hit_cost_per_million_tokens_usd: float = Field(
+        0.0, ge=0, description="Cost per million cache hit tokens in USD"
     )
-    cached_write_cost_per_million_tokens_usd: float = Field(
-        0.0, ge=0, description="Cost per million cached write tokens in USD"
+    cache_write_cost_per_million_tokens_usd: float = Field(
+        0.0, ge=0, description="Cost per million cache write tokens in USD"
     )
 
 
@@ -107,8 +107,8 @@ class ModelCostResponse(BaseModel):
     provider: str
     input_cost_per_million_tokens_usd: float
     output_cost_per_million_tokens_usd: float
-    cached_read_cost_per_million_tokens_usd: float
-    cached_write_cost_per_million_tokens_usd: float
+    cache_hit_cost_per_million_tokens_usd: float
+    cache_write_cost_per_million_tokens_usd: float
     updated_at: datetime
 
 

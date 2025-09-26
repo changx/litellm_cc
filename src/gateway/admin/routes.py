@@ -361,8 +361,8 @@ async def create_or_update_model_cost(
             provider=request.provider,
             input_cost_per_million_tokens_usd=request.input_cost_per_million_tokens_usd,
             output_cost_per_million_tokens_usd=request.output_cost_per_million_tokens_usd,
-            cached_read_cost_per_million_tokens_usd=request.cached_read_cost_per_million_tokens_usd,
-            cached_write_cost_per_million_tokens_usd=request.cached_write_cost_per_million_tokens_usd,
+            cache_hit_cost_per_million_tokens_usd=request.cache_hit_cost_per_million_tokens_usd,
+            cache_write_cost_per_million_tokens_usd=request.cache_write_cost_per_million_tokens_usd,
         )
 
         updated_cost = await modelcost_repo.create_or_update_cost(model_cost)
@@ -376,8 +376,8 @@ async def create_or_update_model_cost(
             provider=updated_cost.provider,
             input_cost_per_million_tokens_usd=updated_cost.input_cost_per_million_tokens_usd,
             output_cost_per_million_tokens_usd=updated_cost.output_cost_per_million_tokens_usd,
-            cached_read_cost_per_million_tokens_usd=updated_cost.cached_read_cost_per_million_tokens_usd,
-            cached_write_cost_per_million_tokens_usd=updated_cost.cached_write_cost_per_million_tokens_usd,
+            cache_hit_cost_per_million_tokens_usd=updated_cost.cache_hit_cost_per_million_tokens_usd,
+            cache_write_cost_per_million_tokens_usd=updated_cost.cache_write_cost_per_million_tokens_usd,
             updated_at=updated_cost.updated_at,
         )
 
@@ -398,8 +398,8 @@ async def list_model_costs(_: bool = Depends(get_admin_auth)):
             provider=cost.provider,
             input_cost_per_million_tokens_usd=cost.input_cost_per_million_tokens_usd,
             output_cost_per_million_tokens_usd=cost.output_cost_per_million_tokens_usd,
-            cached_read_cost_per_million_tokens_usd=cost.cached_read_cost_per_million_tokens_usd,
-            cached_write_cost_per_million_tokens_usd=cost.cached_write_cost_per_million_tokens_usd,
+            cache_hit_cost_per_million_tokens_usd=cost.cache_hit_cost_per_million_tokens_usd,
+            cache_write_cost_per_million_tokens_usd=cost.cache_write_cost_per_million_tokens_usd,
             updated_at=cost.updated_at,
         )
         for cost in costs
@@ -418,8 +418,8 @@ async def get_model_cost(model_name: str, _: bool = Depends(get_admin_auth)):
         provider=cost.provider,
         input_cost_per_million_tokens_usd=cost.input_cost_per_million_tokens_usd,
         output_cost_per_million_tokens_usd=cost.output_cost_per_million_tokens_usd,
-        cached_read_cost_per_million_tokens_usd=cost.cached_read_cost_per_million_tokens_usd,
-        cached_write_cost_per_million_tokens_usd=cost.cached_write_cost_per_million_tokens_usd,
+        cache_hit_cost_per_million_tokens_usd=cost.cache_hit_cost_per_million_tokens_usd,
+        cache_write_cost_per_million_tokens_usd=cost.cache_write_cost_per_million_tokens_usd,
         updated_at=cost.updated_at,
     )
 

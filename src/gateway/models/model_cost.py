@@ -20,11 +20,11 @@ class ModelCost(MongoBaseModel):
     output_cost_per_million_tokens_usd: float = Field(
         ..., ge=0, description="Cost per million output tokens in USD"
     )
-    cached_read_cost_per_million_tokens_usd: float = Field(
-        0.0, ge=0, description="Cost per million cached read tokens in USD"
+    cache_hit_cost_per_million_tokens_usd: float = Field(
+        0.0, ge=0, description="Cost per million cache hit tokens in USD"
     )
-    cached_write_cost_per_million_tokens_usd: float = Field(
-        0.0, ge=0, description="Cost per million cached write tokens in USD"
+    cache_write_cost_per_million_tokens_usd: float = Field(
+        0.0, ge=0, description="Cost per million cache write tokens in USD"
     )
     updated_at: datetime = Field(
         default_factory=datetime.utcnow, description="Last update timestamp"
@@ -45,5 +45,5 @@ class ModelCost(MongoBaseModel):
         ) * self.output_cost_per_million_tokens_usd
         cached_cost = (
             cached_tokens / 1_000_000
-        ) * self.cached_read_cost_per_million_tokens_usd
+        ) * self.cache_hit_cost_per_million_tokens_usd
         return input_cost + output_cost + cached_cost
