@@ -62,20 +62,20 @@ class StreamingResponseHandler:
                 yield f"data: {json.dumps(error_chunk)}\n\n"
                 raise
 
-            finally:
-                # Handle billing after stream completion
-                try:
-                    await self._handle_post_stream_billing(
-                        stream_wrapper,
-                        api_key,
-                        account,
-                        request_data,
-                        endpoint,
-                        collected_chunks,
-                        client_ip,
-                    )
-                except Exception as e:
-                    logger.error(f"Error in post-stream billing: {e}")
+            # finally:
+            # Handle billing after stream completion
+            # try:
+            #     await self._handle_post_stream_billing(
+            #         stream_wrapper,
+            #         api_key,
+            #         account,
+            #         request_data,
+            #         endpoint,
+            #         collected_chunks,
+            #         client_ip,
+            #     )
+            # except Exception as e:
+            #     logger.error(f"Error in post-stream billing: {e}")
 
         return StreamingResponse(
             stream_with_billing(),
