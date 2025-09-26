@@ -10,6 +10,23 @@ from pydantic import Field
 from .base import MongoBaseModel
 
 
+class UsageData(MongoBaseModel):
+    input_tokens: int
+    output_tokens: int
+    cached_tokens: int
+    cache_creation_tokens: int
+    total_tokens: int
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.total_tokens = (
+            self.input_tokens
+            + self.output_tokens
+            + self.cached_tokens
+            + self.cache_creation_tokens
+        )
+
+
 class UsageLog(MongoBaseModel):
     """Usage log for detailed audit tracking"""
 
