@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from gateway.auth.dependencies import require_model_access
 from gateway.billing import BillingManager
 from gateway.models import Account, ApiKey
+from gateway.providers.anthropic import AnthropicProvider
 
 from .litellm_client import LiteLLMClient
 from .streaming import StreamingResponseHandler
@@ -24,6 +25,7 @@ class ProxyRouter:
 
     def __init__(self):
         self.litellm_client = LiteLLMClient()
+        self.anthropic_provider = AnthropicProvider()
         self.billing_manager = BillingManager()
         self.streaming_handler = StreamingResponseHandler(self.billing_manager)
 
@@ -59,35 +61,70 @@ class ProxyRouter:
             # Check if this is a streaming request
             is_streaming = request_data.get("stream", False)
 
-            # Execute the request through LiteLLM
-            response = await self.litellm_client.completion(
-                provider=provider, request_data=request_data, stream=is_streaming
-            )
+            # Route to appropriate provider
+            if provider == "anthropic":
+                # Use direct Anthropic provider
+                response = await self.anthropic_provider.forward_messages(
+                    request_data=request_data, stream=is_streaming
+                )
 
-            if is_streaming:
-                # Handle streaming response
-                return await self.streaming_handler.handle_stream(
-                    stream_generator=response,
-                    api_key=api_key,
-                    account=account,
-                    request_data=request_data,
-                    endpoint=endpoint,
-                    client_ip=client_ip,
-                )
+                if is_streaming:
+                    # For Anthropic streaming, response is a tuple
+                    stream_generator, usage_data, complete_message = response
+                    return await self._handle_anthropic_streaming_response(
+                        stream_generator=stream_generator,
+                        usage_data=usage_data,
+                        complete_message=complete_message,
+                        api_key=api_key,
+                        account=account,
+                        request_data=request_data,
+                        endpoint=endpoint,
+                        client_ip=client_ip,
+                        processing_time_ms=(time.time() - start_time) * 1000,
+                    )
+                else:
+                    # For Anthropic non-streaming, response is a dict
+                    usage_data = self.anthropic_provider.extract_usage_from_response(response)
+                    return await self._handle_anthropic_non_streaming_response(
+                        response=response,
+                        usage_data=usage_data,
+                        api_key=api_key,
+                        account=account,
+                        request_data=request_data,
+                        endpoint=endpoint,
+                        client_ip=client_ip,
+                        processing_time_ms=(time.time() - start_time) * 1000,
+                    )
             else:
-                # Handle non-streaming response
-                logger.debug(
-                    f"#response_debug router: non-streaming response: {response}"
+                # Use LiteLLM for other providers
+                response = await self.litellm_client.completion(
+                    provider=provider, request_data=request_data, stream=is_streaming
                 )
-                return await self._handle_non_streaming_response(
-                    response=response,
-                    api_key=api_key,
-                    account=account,
-                    request_data=request_data,
-                    endpoint=endpoint,
-                    client_ip=client_ip,
-                    processing_time_ms=(time.time() - start_time) * 1000,
-                )
+
+                if is_streaming:
+                    # Handle streaming response
+                    return await self.streaming_handler.handle_stream(
+                        stream_generator=response,
+                        api_key=api_key,
+                        account=account,
+                        request_data=request_data,
+                        endpoint=endpoint,
+                        client_ip=client_ip,
+                    )
+                else:
+                    # Handle non-streaming response
+                    logger.debug(
+                        f"#response_debug router: non-streaming response: {response}"
+                    )
+                    return await self._handle_non_streaming_response(
+                        response=response,
+                        api_key=api_key,
+                        account=account,
+                        request_data=request_data,
+                        endpoint=endpoint,
+                        client_ip=client_ip,
+                        processing_time_ms=(time.time() - start_time) * 1000,
+                    )
 
         except Exception as e:
             logger.error(f"Error in proxy routing: {e}")
@@ -194,3 +231,116 @@ class ProxyRouter:
                 response_dict = dict(response)
 
             return JSONResponse(content=response_dict)
+
+    async def _handle_anthropic_non_streaming_response(
+        self,
+        response: Dict[str, Any],
+        usage_data: Any,
+        api_key: ApiKey,
+        account: Account,
+        request_data: Dict[str, Any],
+        endpoint: str,
+        client_ip: str = None,
+        processing_time_ms: float = 0,
+    ) -> JSONResponse:
+        """Handle Anthropic non-streaming response with billing"""
+
+        try:
+            # Convert usage_data to dict for billing
+            if hasattr(usage_data, '__dict__'):
+                usage_dict = usage_data.__dict__
+            else:
+                usage_dict = {
+                    "input_tokens": getattr(usage_data, 'input_tokens', 0),
+                    "output_tokens": getattr(usage_data, 'output_tokens', 0),
+                    "cached_tokens": getattr(usage_data, 'cached_tokens', 0),
+                    "cache_creation_tokens": getattr(usage_data, 'cache_creation_tokens', 0),
+                    "total_tokens": getattr(usage_data, 'total_tokens', 0),
+                    "is_cache_hit": False,
+                }
+
+            # Process billing
+            await self.billing_manager.process_usage_and_bill(
+                api_key=api_key,
+                account=account,
+                model_name=request_data.get("model", "unknown"),
+                usage_data=usage_dict,
+                request_endpoint=endpoint,
+                request_payload=request_data,
+                response_payload=response,
+                client_ip=client_ip,
+                processing_time_ms=processing_time_ms,
+            )
+
+            logger.info(
+                f"Anthropic request processed for user {account.user_id}: "
+                f"model {request_data.get('model')}, "
+                f"{usage_dict['total_tokens']} tokens"
+            )
+
+            return JSONResponse(content=response)
+
+        except Exception as e:
+            logger.error(f"Error handling Anthropic non-streaming response: {e}")
+            return JSONResponse(content=response)
+
+    async def _handle_anthropic_streaming_response(
+        self,
+        stream_generator,
+        usage_data: Any,
+        complete_message: Dict[str, Any],
+        api_key: ApiKey,
+        account: Account,
+        request_data: Dict[str, Any],
+        endpoint: str,
+        client_ip: str = None,
+        processing_time_ms: float = 0,
+    ) -> StreamingResponse:
+        """Handle Anthropic streaming response with billing"""
+
+        async def billing_wrapper():
+            # Stream all events
+            async for chunk in stream_generator:
+                yield chunk
+
+            # After streaming completes, process billing
+            try:
+                # Convert usage_data to dict for billing
+                if hasattr(usage_data, '__dict__'):
+                    usage_dict = usage_data.__dict__
+                else:
+                    usage_dict = {
+                        "input_tokens": getattr(usage_data, 'input_tokens', 0),
+                        "output_tokens": getattr(usage_data, 'output_tokens', 0),
+                        "cached_tokens": getattr(usage_data, 'cached_tokens', 0),
+                        "cache_creation_tokens": getattr(usage_data, 'cache_creation_tokens', 0),
+                        "total_tokens": getattr(usage_data, 'total_tokens', 0),
+                        "is_cache_hit": False,
+                    }
+
+                await self.billing_manager.process_usage_and_bill(
+                    api_key=api_key,
+                    account=account,
+                    model_name=request_data.get("model", "unknown"),
+                    usage_data=usage_dict,
+                    request_endpoint=endpoint,
+                    request_payload=request_data,
+                    response_payload=complete_message,
+                    client_ip=client_ip,
+                    processing_time_ms=processing_time_ms,
+                )
+
+                logger.info(
+                    f"Anthropic streaming request processed for user {account.user_id}: "
+                    f"model {request_data.get('model')}, "
+                    f"{usage_dict['total_tokens']} tokens"
+                )
+
+            except Exception as e:
+                logger.error(f"Error in Anthropic streaming billing: {e}")
+
+        return StreamingResponse(
+            billing_wrapper(),
+            media_type="text/plain",
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
+        )
