@@ -134,6 +134,7 @@ async def root():
         "endpoints": {
             "chat_completions": "/v1/chat/completions",
             "anthropic_messages": "/v1/messages",
+            "anthropic_count_tokens": "/v1/messages/count_tokens",
             "litellm_responses": "/v1/responses",
             "models": "/v1/models",
             "account": "/v1/account",

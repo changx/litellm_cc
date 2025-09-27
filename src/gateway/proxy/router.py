@@ -344,3 +344,47 @@ class ProxyRouter:
             media_type="text/plain",
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
         )
+
+    async def count_tokens(
+        self,
+        request_data: Dict[str, Any],
+        api_key: ApiKey,
+        account: Account,
+    ) -> JSONResponse:
+        """
+        Count tokens for a request without creating a message
+        """
+        try:
+            # Extract model name from request
+            model_name = request_data.get("model")
+            if not model_name:
+                return JSONResponse(
+                    status_code=400, content={"error": "Model name is required"}
+                )
+
+            # Determine if this is an Anthropic model
+            if any(provider in model_name.lower() for provider in ["claude", "anthropic"]):
+                # Use Anthropic provider for token counting
+                response = await self.anthropic_provider.count_tokens(request_data)
+                return JSONResponse(content=response)
+            else:
+                # For non-Anthropic models, return an error for now
+                # In the future, could add support for other providers
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "error": "Token counting only supported for Anthropic models currently"
+                    }
+                )
+
+        except Exception as e:
+            logger.error(f"Error in token counting: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "error": {
+                        "message": "Internal server error",
+                        "type": "internal_error",
+                    }
+                },
+            )

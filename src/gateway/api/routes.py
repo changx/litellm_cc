@@ -7,7 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
-from gateway.auth.dependencies import get_authenticated_user
+from gateway.auth.dependencies import get_authenticated_user, require_model_access
 from gateway.models import Account, ApiKey
 from gateway.proxy import ProxyRouter
 
@@ -135,6 +135,37 @@ async def list_models(
         ]
 
     return JSONResponse(content=models)
+
+
+@api_router.post("/messages/count_tokens")
+async def count_tokens(
+    request: Request,
+    auth_data: tuple[ApiKey, Account] = Depends(get_authenticated_user),
+):
+    """Count tokens for a messages request without creating a message"""
+    api_key, account = auth_data
+
+    # Get request body
+    request_data = await request.json()
+
+    # Extract model name from request
+    model_name = request_data.get("model")
+    if not model_name:
+        return JSONResponse(
+            status_code=400, content={"error": "Model name is required"}
+        )
+
+    # Check model access permissions
+    require_model_access(api_key, model_name)
+
+    # Route to count tokens
+    response = await proxy_router.count_tokens(
+        request_data=request_data,
+        api_key=api_key,
+        account=account,
+    )
+
+    return response
 
 
 @api_router.get("/account")

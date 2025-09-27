@@ -183,3 +183,38 @@ class AnthropicProvider(BaseProvider):
             cached_tokens=usage.get('cache_read_input_tokens', 0),
             cache_creation_tokens=usage.get('cache_creation_input_tokens', 0),
         )
+
+    async def count_tokens(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Count tokens for a messages request without creating a message
+
+        Args:
+            request_data: The request payload containing model, messages, etc.
+
+        Returns:
+            Dict containing input_tokens count
+        """
+        if not self.api_key:
+            raise ValueError("ANTHROPIC_API_KEY not configured")
+
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": self.api_key,
+            "anthropic-version": "2023-06-01"
+        }
+
+        url = f"{self.base_url}/v1/messages/count_tokens"
+
+        # Create payload for token counting
+        payload = dict(request_data)
+        # Ensure stream is False for token counting
+        payload["stream"] = False
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, json=payload) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    raise Exception(f"Anthropic API error ({response.status}): {error_text}")
+
+                response_data = await response.json()
+                return response_data
